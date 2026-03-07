@@ -83,10 +83,10 @@
       notify: Regenerate GRUB
       tags: [system, kernel]
 
-    #- name: System | Disable debug repositories
-    #  ansible.builtin.command: dnf config-manager --set-disabled "*debug*"
-    #  changed_when: false
-    #  tags: [system, kernel]
+    - name: System | Disable debug repositories
+      ansible.builtin.shell: dnf config-manager setopt "*debug*".enabled=0
+      changed_when: false
+      tags: [system, kernel]
 
     - name: System | Get list of old kernels
       ansible.builtin.shell: dnf repoquery --installonly --latest-limit=-1 -q
@@ -104,10 +104,25 @@
 
     # --- Hardware & Drivers ---
     - name: Hardware | Detect GPU Type
-      ansible.builtin.shell: lspci | grep -iE "vga|3d"
+      ansible.builtin.shell: lspci | grep -iE "vga|3d|display"
       register: gpu_info
       changed_when: false
       tags: [hardware]
+
+    - name: Hardware | Install Intel Media Drivers
+      ansible.builtin.dnf:
+        name: "{{ intel_media_packages }}"
+        state: present
+      when: "'intel' in gpu_info.stdout | lower"
+      tags: [hardware, intel]
+
+    - name: Hardware | Install AMD VA-API and VDPAU (Freeworld)
+      ansible.builtin.dnf:
+        name: "{{ amd_multimedia_packages }}"
+        state: present
+        allowerasing: yes
+      when: "'amd' in gpu_info.stdout | lower or 'ati' in gpu_info.stdout | lower"
+      tags: [hardware, amd]
 
   handlers:
     - name: Regenerate GRUB

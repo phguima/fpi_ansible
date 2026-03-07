@@ -9,6 +9,18 @@ grub_gfxmode: "1920x1080x32,1280x720x32,auto"
 grub_gfxpayload: "keep"
 grub_terminal_output: "gfxterm"
 
+# Hardware Drivers
+intel_media_packages:
+  - libva-intel-driver
+  - intel-media-driver
+  - libvdpau-va-gl
+
+amd_multimedia_packages:
+  - mesa-va-drivers-freeworld
+  - mesa-vdpau-drivers-freeworld
+  - libva-utils
+  - vdpauinfo
+
 # Package Lists from .packages files
 dnf_packages_common:
   - argyllcms
