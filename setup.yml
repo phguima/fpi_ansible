@@ -6,6 +6,14 @@
     - vars/main.yml
 
   tasks:
+    - name: Bootstrap | Upgrade all packages and refresh dnf cache
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+        update_cache: yes
+      become: true
+      tags: [system, bootstrap]
+
     - name: Bootstrap | Install dnf-plugins-core
       ansible.builtin.dnf:
         name: dnf-plugins-core
@@ -39,4 +47,9 @@
       changed_when: false
       tags: [system, flatpak]
 
-      # --- System Configuration ---
+    # --- Hardware & Drivers ---
+    - name: Hardware | Detect GPU Type
+      ansible.builtin.shell: lspci | grep -iE "vga|3d"
+      register: gpu_info
+      changed_when: false
+      tags: [hardware]
