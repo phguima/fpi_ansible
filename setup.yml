@@ -83,10 +83,10 @@
       notify: Regenerate GRUB
       tags: [system, kernel]
 
-    - name: System | Disable debug repositories
-      ansible.builtin.command: dnf config-manager --set-disabled "*debug*"
-      changed_when: false
-      tags: [system, kernel]
+    #- name: System | Disable debug repositories
+    #  ansible.builtin.command: dnf config-manager --set-disabled "*debug*"
+    #  changed_when: false
+    #  tags: [system, kernel]
 
     - name: System | Get list of old kernels
       ansible.builtin.shell: dnf repoquery --installonly --latest-limit=-1 -q
