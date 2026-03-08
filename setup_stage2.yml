@@ -167,13 +167,27 @@
       loop: "{{ zsh_users }}"
       tags: [shell, omz]
     
-     # --- Desktop Environment Detection ---
+    # --- Desktop Environment Detection ---
     - name: System | Detect Desktop Environment
       set_fact:
-        is_gnome: "{{ 'GNOME' in (ansible_env.XDG_CURRENT_DESKTOP | default('') | upper) }}"
-        is_kde: "{{ 'KDE' in (ansible_env.XDG_CURRENT_DESKTOP | default('') | upper) or 'PLASMA' in (ansible_env.XDG_CURRENT_DESKTOP | default('') | upper) }}"
+        detected_xdg: "{{ lookup('env', 'XDG_CURRENT_DESKTOP') | default('') | upper }}"
       tags: [system, detection]
 
+    - name: System | Set DE Boolean Facts
+      set_fact:
+        is_gnome: "{{ 'GNOME' in detected_xdg }}"
+        is_kde: "{{ 'KDE' in detected_xdg or 'PLASMA' in detected_xdg or 'KDE' in (ansible_env.XDG_CURRENT_DESKTOP | default('') | upper) }}"
+      tags: [system, detection]
+
+    - name: System | Debug DE Detection
+      ansible.builtin.debug:
+        msg: 
+          - "XDG_CURRENT_DESKTOP (lookup): {{ detected_xdg }}"
+          - "XDG_CURRENT_DESKTOP (ansible_env): {{ ansible_env.XDG_CURRENT_DESKTOP | default('UNDEFINED') }}"
+          - "Is GNOME: {{ is_gnome }}"
+          - "Is KDE/Plasma: {{ is_kde }}"
+      tags: [system, detection, debug]
+    
     # --- DNF Package Installation ---
     - name: Software | Install Common DNF Packages
       ansible.builtin.dnf:
@@ -200,4 +214,4 @@
       ansible.builtin.dnf:
         name: "{{ fonts_packages }}"
         state: present
-      tags: [software, fonts]    
+      tags: [software, fonts]
