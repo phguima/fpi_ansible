@@ -215,3 +215,27 @@
         name: "{{ fonts_packages }}"
         state: present
       tags: [software, fonts]
+
+    # --- Flatpak Software Installation ---
+    - name: Software | Install Common Flatpak Applications
+      ansible.builtin.shell: "flatpak install flathub {{ item }} -y"
+      loop: "{{ flatpak_apps_common }}"
+      register: flatpak_common_install
+      changed_when: "'Installing' in flatpak_common_install.stdout"
+      tags: [software, flatpak, common]
+
+    - name: Software | Install GNOME Specific Flatpak Applications
+      ansible.builtin.shell: "flatpak install flathub {{ item }} -y"
+      loop: "{{ flatpak_apps_gnome }}"
+      when: is_gnome
+      register: flatpak_gnome_install
+      changed_when: "'Installing' in flatpak_gnome_install.stdout"
+      tags: [software, flatpak, gnome]
+
+    - name: Software | Install KDE Specific Flatpak Applications
+      ansible.builtin.shell: "flatpak install flathub {{ item }} -y"
+      loop: "{{ flatpak_apps_kde }}"
+      when: is_kde
+      register: flatpak_kde_install
+      changed_when: "'Installing' in flatpak_kde_install.stdout"
+      tags: [software, flatpak, kde]
