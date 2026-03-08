@@ -8,9 +8,10 @@
   tasks:
     # --- Flatpak Configuration ---
     - name: System | Enable Flathub Repository
-      ansible.builtin.shell: |
-        flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-      changed_when: false
+      community.general.flatpak_remote:
+        name: flathub
+        state: present
+        url: https://dl.flathub.org/repo/flathub.flatpakrepo
       tags: [system, flatpak]
     
     # --- Kernel Maintenance ---
@@ -218,24 +219,27 @@
 
     # --- Flatpak Software Installation ---
     - name: Software | Install Common Flatpak Applications
-      ansible.builtin.shell: "flatpak install flathub {{ item }} -y"
+      community.general.flatpak:
+        name: "{{ item }}"
+        state: present
+        remote: flathub
       loop: "{{ flatpak_apps_common }}"
-      register: flatpak_common_install
-      changed_when: "'Installing' in flatpak_common_install.stdout"
       tags: [software, flatpak, common]
 
     - name: Software | Install GNOME Specific Flatpak Applications
-      ansible.builtin.shell: "flatpak install flathub {{ item }} -y"
+      community.general.flatpak:
+        name: "{{ item }}"
+        state: present
+        remote: flathub
       loop: "{{ flatpak_apps_gnome }}"
       when: is_gnome
-      register: flatpak_gnome_install
-      changed_when: "'Installing' in flatpak_gnome_install.stdout"
       tags: [software, flatpak, gnome]
 
     - name: Software | Install KDE Specific Flatpak Applications
-      ansible.builtin.shell: "flatpak install flathub {{ item }} -y"
+      community.general.flatpak:
+        name: "{{ item }}"
+        state: present
+        remote: flathub
       loop: "{{ flatpak_apps_kde }}"
       when: is_kde
-      register: flatpak_kde_install
-      changed_when: "'Installing' in flatpak_kde_install.stdout"
       tags: [software, flatpak, kde]
