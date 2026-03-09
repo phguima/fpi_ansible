@@ -451,7 +451,7 @@
     - name: Software | Disable Konsole 'Remember window size'
       community.general.ini_file:
         path: "{{ primary_user_data.ansible_facts.getent_passwd[ansible_env.SUDO_USER][4] }}/.config/konsolerc"
-        section: General
+        section: KonsoleWindow
         option: RememberWindowSize
         value: "false"
         owner: "{{ ansible_env.SUDO_USER }}"
