@@ -126,3 +126,7 @@ zsh_aliases: |
   alias geminicli="cd ~/wks && clear && gemini"
   alias openthevoid="sudo cryptsetup open /dev/nvme0n1p3 thevoid"
   alias closethevoid="sudo cryptsetup close thevoid"
+
+# Konsole Settings
+konsole_profile_url: "https://raw.githubusercontent.com/phguima/fedora_stuffs/refs/heads/main/konsole/kali-like-alt.profile"
+konsole_scheme_url: "https://raw.githubusercontent.com/phguima/fedora_stuffs/refs/heads/main/konsole/kali-like-alt.colorscheme"

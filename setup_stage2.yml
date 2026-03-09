@@ -418,4 +418,32 @@
       ansible.builtin.hostname:
         name: "{{ system_hostname }}"
       tags: [system, hostname]
-      
+
+    # --- KDE Specific Configuration ---
+    - name: Software | Ensure Konsole directory exists
+      ansible.builtin.file:
+        path: "{{ primary_user_data.ansible_facts.getent_passwd[ansible_env.SUDO_USER][4] }}/.local/share/konsole"
+        state: directory
+        owner: "{{ ansible_env.SUDO_USER }}"
+        group: "{{ ansible_env.SUDO_USER }}"
+        mode: '0755'
+      when: is_kde and ansible_env.SUDO_USER is defined
+      tags: [software, kde, konsole]
+
+    - name: Software | Download Konsole profile
+      ansible.builtin.get_url:
+        url: "{{ konsole_profile_url }}"
+        dest: "{{ primary_user_data.ansible_facts.getent_passwd[ansible_env.SUDO_USER][4] }}/.local/share/konsole/kali-like-alt.profile"
+        owner: "{{ ansible_env.SUDO_USER }}"
+        mode: '0644'
+      when: is_kde and ansible_env.SUDO_USER is defined
+      tags: [software, kde, konsole]
+
+    - name: Software | Download Konsole color scheme
+      ansible.builtin.get_url:
+        url: "{{ konsole_scheme_url }}"
+        dest: "{{ primary_user_data.ansible_facts.getent_passwd[ansible_env.SUDO_USER][4] }}/.local/share/konsole/kali-like-alt.colorscheme"
+        owner: "{{ ansible_env.SUDO_USER }}"
+        mode: '0644'
+      when: is_kde and ansible_env.SUDO_USER is defined
+      tags: [software, kde, konsole]
