@@ -41,14 +41,14 @@
     - name: Hardware | Refresh DNF Cache for COPR
       ansible.builtin.dnf:
         update_cache: yes
-      when: is_asus
+      #when: is_asus
       tags: [hardware, asus]
 
     - name: Hardware | Install ASUS ROG Packages
       ansible.builtin.dnf:
         name: "{{ asus_packages }}"
         state: present
-      when: is_asus
+      #when: is_asus
       tags: [hardware, asus]
 
 
@@ -57,7 +57,7 @@
         name: supergfxd.service
         enabled: yes
         state: started
-      when: is_asus
+      #when: is_asus
       tags: [hardware, asus]
 
     - name: Hardware | Ensure Autostart Directory Exists
@@ -67,7 +67,7 @@
         owner: "{{ ansible_env.SUDO_USER }}"
         group: "{{ ansible_env.SUDO_USER }}"
         mode: '0755'
-      when: is_asus and ansible_env.SUDO_USER is defined
+      #when: is_asus and ansible_env.SUDO_USER is defined
       tags: [hardware, asus]
 
     - name: Hardware | Add ASUS ROG GUI to Autostart
@@ -78,5 +78,5 @@
         owner: "{{ ansible_env.SUDO_USER }}"
         group: "{{ ansible_env.SUDO_USER }}"
         mode: '0644'
-      when: is_asus and ansible_env.SUDO_USER is defined
+      #when: is_asus and ansible_env.SUDO_USER is defined
       tags: [hardware, asus]
