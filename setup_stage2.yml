@@ -53,6 +53,11 @@
       tags: [system, kernel]
     
     # --- Hardware & Drivers ---
+    - name: Hardware | Detect ASUS System
+      set_fact:
+        is_asus: "{{ (ansible_system_vendor | default('') | lower is search('asus')) or (ansible_board_vendor | default('') | lower is search('asus')) }}"
+      tags: [hardware, asus]
+
     - name: Hardware | Detect GPU Type
       ansible.builtin.shell: lspci | grep -iE "vga|3d|display"
       register: gpu_info
@@ -74,6 +79,56 @@
         allowerasing: yes
       when: gpu_info.stdout | lower | regex_search('\b(amd|ati)\b')
       tags: [hardware, amd]
+
+    - name: Hardware | Enable ASUS ROG Copr Repository
+      community.general.copr:
+        name: "{{ asus_copr_repo }}"
+        state: enabled
+      when: is_asus
+      tags: [hardware, asus]
+
+    - name: Hardware | Refresh DNF Cache for COPR
+      ansible.builtin.dnf:
+        update_cache: yes
+      when: is_asus
+      tags: [hardware, asus]
+
+    - name: Hardware | Install ASUS ROG Packages
+      ansible.builtin.dnf:
+        name: "{{ asus_packages }}"
+        state: present
+      when: is_asus
+      tags: [hardware, asus]
+
+    - name: Hardware | Enable and Start supergfxd.service
+      ansible.builtin.systemd:
+        name: supergfxd.service
+        enabled: yes
+        state: started
+      when: is_asus
+      tags: [hardware, asus]
+
+    # --- ASUS ROG Autostart ---
+    - name: Hardware | Ensure Autostart Directory Exists
+      ansible.builtin.file:
+        path: "{{ primary_user_data.ansible_facts.getent_passwd[ansible_env.SUDO_USER][4] }}/.config/autostart"
+        state: directory
+        owner: "{{ ansible_env.SUDO_USER }}"
+        group: "{{ ansible_env.SUDO_USER }}"
+        mode: '0755'
+      when: is_asus and ansible_env.SUDO_USER is defined
+      tags: [hardware, asus]
+
+    - name: Hardware | Add ASUS ROG GUI to Autostart
+      ansible.builtin.copy:
+        src: "/usr/share/applications/rog-control-center.desktop"
+        dest: "{{ primary_user_data.ansible_facts.getent_passwd[ansible_env.SUDO_USER][4] }}/.config/autostart/rog-control-center.desktop"
+        remote_src: yes
+        owner: "{{ ansible_env.SUDO_USER }}"
+        group: "{{ ansible_env.SUDO_USER }}"
+        mode: '0644'
+      when: is_asus and ansible_env.SUDO_USER is defined
+      tags: [hardware, asus]
     
     # --- Zsh and Oh-My-Zsh ---
     - name: Shell | Debug User Information
