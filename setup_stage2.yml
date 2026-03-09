@@ -335,13 +335,36 @@
         disable_gpg_check: yes
       tags: [software, protonvpn]
 
+    - name: Software | Refresh DNF cache for ProtonVPN
+      ansible.builtin.command: dnf makecache --refresh
+      changed_when: false
+      tags: [software, protonvpn]
+
+    - name: Software | Install ProtonVPN Dependencies
+      ansible.builtin.dnf:
+        name: python3-pip
+        state: present
+      tags: [software, protonvpn]
+
     - name: Software | Install ProtonVPN Application
       ansible.builtin.dnf:
-        name: 
-          - python3-pip
-          - proton-vpn-gnome-desktop
+        name: proton-vpn-gnome-desktop
         state: present
-        update_cache: yes
+      register: protonvpn_install
+      ignore_errors: yes
+      tags: [software, protonvpn]
+
+    - name: Software | Verify ProtonVPN Installation
+      ansible.builtin.command: rpm -q proton-vpn-gnome-desktop
+      changed_when: false
+      failed_when: false
+      register: protonvpn_check
+      tags: [software, protonvpn]
+
+    - name: Software | Report ProtonVPN Status
+      ansible.builtin.debug:
+        msg: "ProtonVPN was installed successfully (despite potential scriptlet warnings)."
+      when: protonvpn_check.rc == 0
       tags: [software, protonvpn]
 
     # --- Workspace and Specialized Tools ---
