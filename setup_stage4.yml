@@ -35,6 +35,12 @@
       community.general.copr:
         name: "{{ asus_copr_repo }}"
         state: enabled
+      #when: is_asus
+      tags: [hardware, asus]
+
+    - name: Hardware | Refresh DNF Cache for COPR
+      ansible.builtin.dnf:
+        update_cache: yes
       when: is_asus
       tags: [hardware, asus]
 
@@ -42,8 +48,9 @@
       ansible.builtin.dnf:
         name: "{{ asus_packages }}"
         state: present
-    #  when: is_asus
+      when: is_asus
       tags: [hardware, asus]
+
 
     - name: Hardware | Enable and Start supergfxd.service
       ansible.builtin.systemd:
