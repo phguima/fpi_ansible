@@ -6,6 +6,23 @@
     - vars/main.yml
 
   tasks:
+    # --- System Tweaks ---
+    - name: System | Set Hostname
+      ansible.builtin.hostname:
+        name: "{{ system_hostname }}"
+      tags: [system, hostname]
+
+    # --- Workspace and Specialized Tools ---
+    - name: Shell | Create 'wks' directory in home
+      ansible.builtin.file:
+        path: "{{ primary_user_data.ansible_facts.getent_passwd[ansible_env.SUDO_USER][4] }}/wks"
+        state: directory
+        owner: "{{ ansible_env.SUDO_USER }}"
+        group: "{{ ansible_env.SUDO_USER }}"
+        mode: '0755'
+      when: ansible_env.SUDO_USER is defined and ansible_env.SUDO_USER != 'root'
+      tags: [shell, workspace]
+
     # --- Flatpak Configuration ---
     - name: System | Enable Flathub Repository
       community.general.flatpak_remote:
@@ -171,91 +188,6 @@
       when: is_asus and ansible_env.SUDO_USER is defined
       tags: [hardware, asus]
     
-    # --- Zsh and Oh-My-Zsh ---
-    - name: Shell | Debug User Information
-      ansible.builtin.debug:
-        msg: 
-          - "Current User ID (ansible_user_id): {{ ansible_user_id }}"
-          - "Sudo User (ansible_env.SUDO_USER): {{ ansible_env.SUDO_USER | default('None') }}"
-      tags: [shell, omz, debug]
-
-    - name: Shell | Install ZSH, Git, and Curl
-      ansible.builtin.dnf:
-        name: [zsh, git, curl, fira-code-fonts]
-        state: present
-      tags: [shell, omz]
-
-    - name: Shell | Identify target users (Sudo User + Root)
-      set_fact:
-        zsh_users:
-          - name: "root"
-            home: "/root"
-          - name: "{{ ansible_env.SUDO_USER }}"
-            home: "{{ primary_user_data.ansible_facts.getent_passwd[ansible_env.SUDO_USER][4] }}"
-      when: ansible_env.SUDO_USER is defined and ansible_env.SUDO_USER != 'root'
-      tags: [shell, omz]
-
-    - name: Shell | Identify target users (Root only)
-      set_fact:
-        zsh_users:
-          - name: "root"
-            home: "/root"
-      when: ansible_env.SUDO_USER is not defined or ansible_env.SUDO_USER == 'root'
-      tags: [shell, omz]
-
-    - name: Shell | Ensure Oh-My-Zsh is installed for users
-      ansible.builtin.shell:
-        cmd: "curl -fsSL {{ omz_install_script_url }} | sh -s -- --unattended --keep-zshrc"
-        creates: "{{ item.home }}/.oh-my-zsh"
-      become_user: "{{ item.name }}"
-      loop: "{{ zsh_users }}"
-      tags: [shell, omz]
-
-    - name: Shell | Ensure .zshrc exists (copy template if missing)
-      ansible.builtin.copy:
-        src: "{{ item.home }}/.oh-my-zsh/templates/zshrc.zsh-template"
-        dest: "{{ item.home }}/.zshrc"
-        remote_src: yes
-        owner: "{{ item.name }}"
-        mode: '0644'
-        force: no
-      loop: "{{ zsh_users }}"
-      tags: [shell, omz]
-
-    - name: Shell | Change default shell to ZSH
-      ansible.builtin.user:
-        name: "{{ item.name }}"
-        shell: /bin/zsh
-      loop: "{{ zsh_users }}"
-      tags: [shell, omz]
-
-    - name: Shell | Download custom theme for users
-      ansible.builtin.get_url:
-        url: "{{ omz_theme_url }}"
-        dest: "{{ item.home }}/.oh-my-zsh/themes/{{ omz_theme_name }}.zsh-theme"
-        owner: "{{ item.name }}"
-        mode: '0644'
-      loop: "{{ zsh_users }}"
-      tags: [shell, omz]
-
-    - name: Shell | Set theme in .zshrc
-      ansible.builtin.lineinfile:
-        path: "{{ item.home }}/.zshrc"
-        regexp: '^ZSH_THEME='
-        line: 'ZSH_THEME="{{ omz_theme_name }}"'
-        owner: "{{ item.name }}"
-      loop: "{{ zsh_users }}"
-      tags: [shell, omz]
-
-    - name: Shell | Add custom aliases to .zshrc
-      ansible.builtin.blockinfile:
-        path: "{{ item.home }}/.zshrc"
-        marker: "# {mark} ANSIBLE MANAGED ALIASES"
-        block: "{{ zsh_aliases }}"
-        owner: "{{ item.name }}"
-      loop: "{{ zsh_users }}"
-      tags: [shell, omz]
-    
     # --- Desktop Environment Detection ---
     - name: System | Detect Desktop Environment
       set_fact:
@@ -320,6 +252,7 @@
         name: brave-browser
         state: present
       tags: [software, brave]
+
     # --- Font Installation ---
     - name: Software | Install Selected Fonts
       ansible.builtin.dnf:
@@ -367,18 +300,6 @@
       when: protonvpn_check.rc == 0
       tags: [software, protonvpn]
 
-    # --- Workspace and Specialized Tools ---
-
-    - name: Shell | Create 'wks' directory in home
-      ansible.builtin.file:
-        path: "{{ primary_user_data.ansible_facts.getent_passwd[ansible_env.SUDO_USER][4] }}/wks"
-        state: directory
-        owner: "{{ ansible_env.SUDO_USER }}"
-        group: "{{ ansible_env.SUDO_USER }}"
-        mode: '0755'
-      when: ansible_env.SUDO_USER is defined and ansible_env.SUDO_USER != 'root'
-      tags: [shell, workspace]
-
     - name: Software | Install GeminiCLI globally
       community.general.npm:
         name: "@google/gemini-cli"
@@ -412,12 +333,6 @@
       loop: "{{ flatpak_apps_kde }}"
       when: is_kde
       tags: [software, flatpak, kde]
-
-    # --- System Tweaks ---
-    - name: System | Set Hostname
-      ansible.builtin.hostname:
-        name: "{{ system_hostname }}"
-      tags: [system, hostname]
 
     # --- KDE Specific Configuration ---
     - name: Software | Ensure Konsole directory exists

@@ -36,39 +36,7 @@ nvidia_multimedia_packages:
   - libva-nvidia-driver
   - xorg-x11-drv-nvidia-cuda-libs
 
-nvidia_prerequisite_packages:
-  - akmods
-  - kmodtool
-  - openssl
-  - mokutil
-
-nvidia_driver_packages:
-  - akmod-nvidia
-  - gcc
-  - kernel-devel
-  - kernel-headers
-  - xorg-x11-drv-nvidia
-  - xorg-x11-drv-nvidia-cuda
-  - xorg-x11-drv-nvidia-libs
-  - xorg-x11-drv-nvidia-libs.i686
-
-nvidia_post_install_packages:
-  - xorg-x11-drv-nvidia-power
-  - vulkan
-
-nvidia_modprobe_conf: |
-  # Enable DynamicPowerManagement
-  # http://download.nvidia.com/XFree86/Linux-x86_64/440.31/README/dynamicpowermanagement.html
-  options nvidia NVreg_DynamicPowerManagement=0x02
-  options nvidia NVreg_TemporaryFilePath=/var/tmp
-
-nvidia_zsh_env: |
-  # NVIDIA Configuration
-  # Finer-Grained Control of GLX + OpenGL
-  export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
-  export __GLX_VENDOR_LIBRARY_NAME=nvidia
-
-# Package Lists from .packages files
+# Packages and Apps
 dnf_packages_common:
   - argyllcms
   - btrfs-assistant
@@ -101,6 +69,7 @@ dnf_packages_gnome:
 dnf_packages_kde:
   - ktorrent
 
+# Flatpak Apps
 flatpak_apps_common:
   - com.bitwarden.desktop
   - com.dec05eba.gpu_screen_recorder
@@ -132,16 +101,16 @@ asus_packages:
   - supergfxctl
   - asusctl-rog-gui
 
-# VS Code Settings
-vscode_gpg_key: "https://packages.microsoft.com/keys/microsoft.asc"
-vscode_repo_url: "https://packages.microsoft.com/yumrepos/vscode"
-
 # Brave Browser Settings
 brave_gpg_key: "https://brave-browser-rpm-release.s3.brave.com/brave-core.asc"
 brave_repo_url: "https://brave-browser-rpm-release.s3.brave.com/x86_64/"
 
 # ProtonVPN Settings
 protonvpn_repo_url: "https://repo.protonvpn.com/fedora-{{ ansible_distribution_major_version }}-stable/protonvpn-stable-release/protonvpn-stable-release-1.0.3-1.noarch.rpm"
+
+# VS Code Settings
+vscode_gpg_key: "https://packages.microsoft.com/keys/microsoft.asc"
+vscode_repo_url: "https://packages.microsoft.com/yumrepos/vscode"
 
 # Oh-My-Zsh settings
 omz_install_script_url: "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh"
