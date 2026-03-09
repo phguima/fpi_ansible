@@ -31,18 +31,25 @@
       register: kmodgen_task
       tags: [nvidia, cert]
 
+    - name: NVIDIA | Verify public key exists
+      ansible.builtin.stat:
+        path: /etc/pki/akmods/certs/public_key.der
+      register: akmod_cert_verify
+      tags: [nvidia, cert]
+
     - name: NVIDIA | Check if key is already enrolled
       ansible.builtin.command: mokutil --test-key /etc/pki/akmods/certs/public_key.der
       register: mok_test
       failed_when: false
       changed_when: false
-      # Ensure this runs after potentially creating the key
+      when: akmod_cert_verify.stat.exists
       tags: [nvidia, cert]
 
     - name: NVIDIA | Import MOK key
       ansible.builtin.pause:
         prompt: "Run 'sudo mokutil --import /etc/pki/akmods/certs/public_key.der' in another terminal to enter the password, then press Enter here to continue."
-      when: mok_test.rc != 0
+      when: 
+        - mok_test is skipped or mok_test.rc != 0
       register: import_task
       tags: [nvidia, cert]
 
