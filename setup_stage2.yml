@@ -135,7 +135,7 @@
       ansible.builtin.dnf:
         name: "{{ amd_multimedia_packages }}"
         state: present
-        allowerasing: true
+        allowerasing: yes
       when: gpu_info.stdout | lower | regex_search('\b(amd|ati|'Advanced Micro Devices')\b')
       tags: [hardware, amd]
 
