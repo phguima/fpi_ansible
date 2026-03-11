@@ -11,6 +11,15 @@
         name: dnf-plugins-core
         state: present
       tags: [system, bootstrap]
+
+    # --- User Discovery ---
+    - name: Shell | Get home directory of the primary user
+      ansible.builtin.getent:
+        database: passwd
+        key: "{{ ansible_env.SUDO_USER }}"
+      register: primary_user_data
+      when: ansible_env.SUDO_USER is defined and ansible_env.SUDO_USER != 'root'
+      tags: [shell, omz, hardware, asus, setup]
     
     # --- DNF Configuration ---
     - name: System | Optimize DNF Configuration
