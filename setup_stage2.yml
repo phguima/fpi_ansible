@@ -85,8 +85,7 @@
       tags: [hardware, asus]
 
     - name: Hardware | Detect GPU Type
-      # -nn provides Vendor IDs (10de=Nvidia, 8086=Intel, 1002=AMD)
-      ansible.builtin.shell: lspci -nn | grep -iE "vga|3d|display"
+      ansible.builtin.shell: lspci | grep -iE "vga|3d|display"
       register: gpu_info
       changed_when: false
       failed_when: false
@@ -136,11 +135,8 @@
       ansible.builtin.dnf:
         name: "{{ amd_multimedia_packages }}"
         state: present
-        allowerasing: yes
-      when: >
-        gpu_info.stdout is search('AMD', ignorecase=True) or 
-        gpu_info.stdout is search('ATI', ignorecase=True) or 
-        gpu_info.stdout is search('Advanced Micro Devices', ignorecase=True)
+        allowerasing: true
+      when: gpu_info.stdout | lower | regex_search('\b(amd|ati|'Advanced Micro Devices')\b')
       tags: [hardware, amd]
 
     # --- ASUS ROG Configuration ---
