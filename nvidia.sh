@@ -257,7 +257,8 @@ function configure_nvidia_zsh() {
 \
 # Finer-Grained Control of GLX + OpenGL\
 export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0\
-export __GLX_VENDOR_LIBRARY_NAME=nvidia' "$zshrc_file"
+export __GLX_VENDOR_LIBRARY_NAME=nvidia\
+export __NV_PRIME_RENDER_OFFLOAD=1' "$zshrc_file"
     else
         # Fallback: If did not find the anchor line "# User configuration", adds to the end of the file
         prompt -wb "Anchor line '# User configuration' not found."
@@ -269,6 +270,7 @@ export __GLX_VENDOR_LIBRARY_NAME=nvidia' "$zshrc_file"
 # Finer-Grained Control of GLX + OpenGL
 export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
 export __GLX_VENDOR_LIBRARY_NAME=nvidia
+export __NV_PRIME_RENDER_OFFLOAD=1
 EOF
     fi
 
