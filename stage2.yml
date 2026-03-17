@@ -498,6 +498,35 @@
           - "Please log out of your session and re-login to effect changes."
       tags: [system, cedilla]
 
+    # --- NVIDIA Applications Overrides Configuration ---
+    - name: Shortcuts | Create local override for Steam shortcut
+      ansible.builtin.copy:
+        src: /usr/share/applications/steam.desktop
+        dest: "{{ primary_user_data.ansible_facts.getent_passwd[ansible_env.SUDO_USER][4] }}/.local/share/applications/steam.desktop"
+        remote_src: yes
+        owner: "{{ ansible_env.SUDO_USER }}"
+        group: "{{ ansible_env.SUDO_USER }}"
+        mode: '0644'
+        force: no
+      when: ansible_env.SUDO_USER is defined
+      tags: [software, steam, gpu]
+
+    - name: Shortcuts | Update Exec line to use NVIDIA GPU
+      ansible.builtin.replace:
+        path: "{{ primary_user_data.ansible_facts.getent_passwd[ansible_env.SUDO_USER][4] }}/.local/share/applications/steam.desktop"
+        regexp: '^Exec=/usr/bin/steam\s+(.*)$'
+        replace: 'Exec=env __NV_PRIME_RENDER_OFFLOAD=1 __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0 __GLX_VENDOR_LIBRARY_NAME=nvidia /usr/bin/steam \1'
+      when: ansible_env.SUDO_USER is defined
+      tags: [software, steam, gpu]
+    
+    - name: Shortcuts | Update desktop database
+      ansible.builtin.command:
+        cmd: "update-desktop-database {{ primary_user_data.ansible_facts.getent_passwd[ansible_env.SUDO_USER][4] }}/.local/share/applications/"
+      become_user: "{{ ansible_env.SUDO_USER }}"
+      changed_when: false
+      when: ansible_env.SUDO_USER is defined
+      tags: [software, steam, gpu]
+
     # --- KDE Specific Configuration ---
     - name: KDE | Ensure konsole directory exists
       ansible.builtin.file:
