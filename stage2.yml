@@ -111,6 +111,25 @@
         update_cache: yes
       tags: [software, multimedia]
     
+    # --- NVIDIA Power Management Configuration ---
+    - name: Hardware | Configure NVIDIA Power Management
+      ansible.builtin.copy:
+        dest: /etc/modprobe.d/nvidia.conf
+        content: |
+          # Enable deep power management
+          options nvidia NVreg_DynamicPowerManagement=0x02
+          options nvidia NVreg_EnableS0ixPowerManagement=1
+
+          # Improve suspend/resume stability (Fedora uses tmpfs for /tmp)
+          options nvidia NVreg_TemporaryFilePath=/var/tmp
+        owner: root
+        group: root
+        mode: '0644'
+      when: 
+        - gpu_info.stdout is search('NVIDIA', ignorecase=True)
+        - nvidia_smi_check.rc == 0
+      tags: [hardware, nvidia, power]
+    
     # --- Kernel Maintenance ---
     - name: Kernel | Prevent removal of debug packages if running debug kernel
       ansible.builtin.fail:
@@ -268,6 +287,23 @@
         global: yes
         state: present
       tags: [software, gemini]
+    
+    - name: Software | Install GeminiCLI extensions for primary user
+      ansible.builtin.command:
+        cmd: "gemini extensions install --consent {{ item.url }}"
+      become_user: "{{ ansible_env.SUDO_USER }}"
+      loop:
+        - { name: 'chrome-devtools', url: 'https://github.com/ChromeDevTools/chrome-devtools-mcp' }
+        - { name: 'code-review', url: 'https://github.com/gemini-cli-extensions/code-review' }
+        - { name: 'criticalthink', url: 'https://github.com/abagames/slash-criticalthink' }
+        - { name: 'gemini-cli-jules', url: 'https://github.com/gemini-cli-extensions/jules' }
+        - { name: 'gemini-cli-security', url: 'https://github.com/gemini-cli-extensions/security' }
+        - { name: 'github', url: 'https://github.com/github/github-mcp-server' }
+        - { name: 'google-workspace', url: 'https://github.com/gemini-cli-extensions/workspace' }
+      register: extension_install
+      changed_when: "'is already installed' not in extension_install.stdout"
+      when: ansible_env.SUDO_USER is defined and ansible_env.SUDO_USER != 'root'
+      tags: [gemini, extensions]
 
      # --- ProtonVPN Installation ---
     - name: ProtonVPN | Install ProtonVPN repository
@@ -335,6 +371,132 @@
         remote: flathub
       loop: "{{ flatpak_apps_common }}"
       tags: [software, flatpak, common]
+    
+    # --- Cedilla Configuration ---
+    - name: Cedilla | Set user facts
+      set_fact:
+        user_name: "{{ ansible_env.SUDO_USER }}"
+        user_home: "{{ primary_user_data.ansible_facts.getent_passwd[ansible_env.SUDO_USER][4] }}"
+      when: ansible_env.SUDO_USER is defined and ansible_env.SUDO_USER != 'root'
+      tags: [always]
+    
+    - name: Cedilla | Find system compose file
+      ansible.builtin.shell: |
+        LANG_VAL=${LANG:=en_US.UTF-8}
+        COMPOSE_DIR="/usr/share/X11/locale"
+        sed -ne "s/^\([^:]*\):[ \t]*$LANG_VAL/\1/p" <"${COMPOSE_DIR}/compose.dir" | head -1
+      register: system_compose_name
+      changed_when: false
+      tags: [system, cedilla]
+
+    - name: Cedilla | Apply fix to .XCompose
+      ansible.builtin.shell: |
+        SYSTEM_COMPOSE="/usr/share/X11/locale/{{ system_compose_name.stdout }}"
+        USER_COMPOSE="{{ user_home }}/.XCompose"
+        
+        # Check if the file already contains cedilla-c instead of accented-c
+        if [ -f "$USER_COMPOSE" ] && grep -q $'\xc3\xa7' "$USER_COMPOSE"; then
+          exit 0
+        fi
+
+        if [ ! -s "$SYSTEM_COMPOSE" ]; then
+          echo "Error: System compose file not found."
+          exit 1
+        fi
+
+        if [ -s "$USER_COMPOSE" ] && [ ! -f "$USER_COMPOSE.ORIGINAL" ]; then
+          cp -f "$USER_COMPOSE" "$USER_COMPOSE.ORIGINAL"
+        fi
+
+        sed -e 's/\xc4\x87/\xc3\xa7/g' -e 's/\xc4\x86/\xc3\x87/g' <"$SYSTEM_COMPOSE" >"$USER_COMPOSE"
+        chown {{ user_name }}:{{ user_name }} "$USER_COMPOSE"
+        chmod 0644 "$USER_COMPOSE"
+        echo "XCOMPOSE_CHANGED"
+      register: xcompose_result
+      changed_when: "'XCOMPOSE_CHANGED' in xcompose_result.stdout"
+      when: 
+        - system_compose_name.stdout != ""
+        - user_home is defined
+      args:
+        executable: /bin/bash
+      tags: [system, cedilla]
+
+    - name: Cedilla | Apply Flatpak overrides for Bitwarden (KDE)
+      ansible.builtin.command:
+        cmd: "flatpak override --user --env=GTK_IM_MODULE=cedilla --env=XDG_CURRENT_DESKTOP=KDE --env=GTK_USE_PORTAL=1 com.bitwarden.desktop"
+      become_user: "{{ user_name }}"
+      register: bitwarden_override_kde
+      failed_when: false
+      changed_when: false
+      tags: [system, cedilla, flatpak]
+    
+    - name: Cedilla | Apply Flatpak overrides for Zoom (KDE)
+      ansible.builtin.command:
+        cmd: "flatpak override --user --env=GTK_IM_MODULE=cedilla --env=QT_IM_MODULE=cedilla --env=XDG_CURRENT_DESKTOP=KDE --env=GTK_USE_PORTAL=1 --filesystem=home us.zoom.Zoom"
+      become_user: "{{ user_name }}"
+      register: zoom_override
+      failed_when: false
+      changed_when: false
+      tags: [system, zoom, cedilla, flatpak]
+
+    - name: Cedilla | Ensure local applications directory exists
+      ansible.builtin.file:
+        path: "{{ user_home }}/.local/share/applications"
+        state: directory
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+        mode: '0755'
+      tags: [brave, cedilla]
+
+    - name: Cedilla | Copy Brave desktop file to local share
+      ansible.builtin.copy:
+        src: /usr/share/applications/brave-browser.desktop
+        dest: "{{ user_home }}/.local/share/applications/brave-browser.desktop"
+        remote_src: yes
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+        mode: '0644'
+        force: no
+      tags: [brave, cedilla]
+
+    - name: Cedilla | Configure Brave to use X11 ozone platform
+      ansible.builtin.replace:
+        path: "{{ user_home }}/.local/share/applications/brave-browser.desktop"
+        regexp: '^Exec=((?!.*--ozone-platform=x11).*?)(\s+(%[uU]|--incognito|--new-window))?$'
+        replace: 'Exec=\1 --ozone-platform=x11\2'
+      tags: [brave, cedilla]
+
+    - name: Cedilla | Copy Chromium desktop file to local share
+      ansible.builtin.copy:
+        src: /usr/share/applications/chromium-browser.desktop
+        dest: "{{ user_home }}/.local/share/applications/chromium-browser.desktop"
+        remote_src: yes
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+        mode: '0644'
+        force: no
+      tags: [chromium, cedilla]
+
+    - name: Cedilla | Configure Chromium to use X11 ozone platform
+      ansible.builtin.replace:
+        path: "{{ user_home }}/.local/share/applications/chromium-browser.desktop"
+        regexp: '^Exec=((?!.*--ozone-platform=x11).*?)(\s+(%[uU]|--incognito|--new-window))?$'
+        replace: 'Exec=\1 --ozone-platform=x11\2'
+      tags: [chromium, cedilla]
+
+    - name: Cedilla | Update desktop database
+      ansible.builtin.command:
+        cmd: "update-desktop-database {{ user_home }}/.local/share/applications/"
+      become_user: "{{ user_name }}"
+      changed_when: false
+      tags: [brave, chromium, cedilla]
+
+    - name: Cedilla | Display completion message
+      ansible.builtin.debug:
+        msg: 
+          - "Cedilla fix applied to {{ user_home }}/.XCompose."
+          - "Please log out of your session and re-login to effect changes."
+      tags: [system, cedilla]
 
     # --- KDE Specific Configuration ---
     - name: KDE | Ensure konsole directory exists
@@ -430,6 +592,22 @@
     - name: Python | Install markitdown globally
       ansible.builtin.pip:
         name: markitdown
+        state: present
+        executable: pip3
+      become: yes
+      tags: [software, python, markitdown]
+
+    - name: Python | Install markitdown[pdf] globally
+      ansible.builtin.pip:
+        name: markitdown[pdf]
+        state: present
+        executable: pip3
+      become: yes
+      tags: [software, python, markitdown]
+    
+    - name: Python | Install markitdown[docx] globally
+      ansible.builtin.pip:
+        name: markitdown[docx]
         state: present
         executable: pip3
       become: yes

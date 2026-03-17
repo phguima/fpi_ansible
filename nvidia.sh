@@ -1,14 +1,3 @@
-#/bin/bash
-#
-# This script install NVIDIA proprietary drivers on Fedora, with some optimizations and extra features.
-#
-# @Author: Pedro Liberal
-# @Date:   2026-03-11 14:28:00
-# @Last Modified by:   phgl
-# @Last Modified time: 2026-03-11 11:31:00
-#
-
-
 # Function: prompt
 # Description: Centralizes output logging with color coding using flags.
 # Usage: prompt <flag> <message>
@@ -157,7 +146,6 @@ function enable_RPMFusion() {
     prompt -sb "RPM Fusion repositories enabled!"
 }
 
-
 # Function: nvidia_warning
 # Description: Show nVidia installation warning and instructions
 function nvidia_warning() {
@@ -194,87 +182,6 @@ function nvidia_warning() {
     prompt -w "3. Select \“Yes\“ and enter the password generated in the previous step"
     prompt -w "4. Select \"OK\" and your computer will restart again"
     prompt -d ""
-}
-
-# Function: enable_nvidia_dpm
-# Description: Enable NVIDIA Dynamic Power Management
-function enable_nvidia_dpm() {
-    prompt -db ""
-    prompt -db "Configuring NVIDIA Dynamic Power Management..."
-
-    local config_file="/etc/modprobe.d/nvidia.conf"
-    local conf_content="# Enable DynamicPowerManagement
-# http://download.nvidia.com/XFree86/Linux-x86_64/440.31/README/dynamicpowermanagement.html
-options nvidia NVreg_DynamicPowerManagement=0x02
-options nvidia NVreg_TemporaryFilePath=/var/tmp"
-
-    ensure_sudo
-
-    # Security backup (if the file already exists)
-    if [ -f "$config_file" ]; then
-        prompt -db "Backing up existing configuration to ${config_file}.bak..."
-        sudo cp "$config_file" "${config_file}.bak"
-    fi
-
-    prompt -i "Writing configuration to $config_file..."
-
-    # Using 'sudo tee' because normal redirection (>) doesn't work in system directories
-    # The "Here String" (<<<) puts the variable directly into the command
-    sudo tee "$config_file" > /dev/null <<< "$conf_content"
-
-    # Check if the command was successful
-    if [ $? -eq 0 ]; then
-        prompt -sb "NVIDIA Power Management configuration applied."
-        prompt -wb "A reboot is required for these changes to take effect."
-    else
-        prompt -eb "Failed to write configuration file."
-    fi
-}
-
-# Function: configure_nvidia_zsh
-# Description: Configure NVIDIA environment variables in .zshrc
-function configure_nvidia_zsh() {
-    prompt -db ""
-    prompt -db "Checking NVIDIA environment variables in .zshrc..."
-
-    local zshrc_file="$HOME/.zshrc"
-
-    # Checks if the configuration already exists (to avoid duplication)
-    if grep -q "__NV_PRIME_RENDER_OFFLOAD_PROVIDER" "$zshrc_file"; then
-        prompt -sb "NVIDIA GLX variables already present in .zshrc. Skipping..."
-        return
-    fi
-
-    # 2. Verifies if the anchor line "# User configuration" exists in the file
-    # This line is standard in the Oh-My-Zsh template
-    if grep -q "^# User configuration" "$zshrc_file"; then
-        prompt -i "Injecting variables under '# User configuration'..."
-
-        # The sed command below does the following:
-        # Searches for the Pattern and Appends (adds after) the Text.
-        # The backslashes (\) at the end of lines are needed for sed to understand line breaks.
-        sed -i '/^# User configuration/a \
-\
-# Finer-Grained Control of GLX + OpenGL\
-export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0\
-export __GLX_VENDOR_LIBRARY_NAME=nvidia\
-export __NV_PRIME_RENDER_OFFLOAD=1' "$zshrc_file"
-    else
-        # Fallback: If did not find the anchor line "# User configuration", adds to the end of the file
-        prompt -wb "Anchor line '# User configuration' not found."
-        prompt -i "Appending variables to the end of .zshrc..."
-
-        # Uses 'cat' with Here Document (<<EOF) to add the block
-        cat >> "$zshrc_file" <<EOF
-
-# Finer-Grained Control of GLX + OpenGL
-export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
-export __GLX_VENDOR_LIBRARY_NAME=nvidia
-export __NV_PRIME_RENDER_OFFLOAD=1
-EOF
-    fi
-
-    prompt -sb "NVIDIA variables added successfully!"
 }
 
 # Function: install_nvidia
@@ -426,14 +333,14 @@ function install_nvidia() {
     sudo dnf mark user akmod-nvidia
 
     # Experimental scripts to enable clean resume on suspend to RAM or suspend to disk (hibernate)
-    if ! check_package "xorg-x11-drv-nvidia-power"; then
-        prompt -db "Installing nVidia power management scripts for suspend/hibernate..."
-    else
-        prompt -s "nVidia power management scripts are already installed. Skipping..."
-    fi
+    #if ! check_package "xorg-x11-drv-nvidia-power"; then
+    #    prompt -db "Installing nVidia power management scripts for suspend/hibernate..."
+    #else
+    #    prompt -s "nVidia power management scripts are already installed. Skipping..."
+    #fi
 
     # Enabling the nVidia suspend, resume and hibernate services
-    sudo systemctl enable nvidia-{suspend,resume,hibernate}
+    #sudo systemctl enable nvidia-{suspend,resume,hibernate}
 
     # Installing Vulkan support packages
     if ! check_package "vulkan"; then
@@ -445,13 +352,6 @@ function install_nvidia() {
         prompt -s "Vulkan support package are already installed. Skipping..."
     fi
 
-    # Enable Dynamic Power Management until this is set as the default in the NVIDIA driver
-    enable_nvidia_dpm
-
-    # Finer-Grained Control of GLX + OpenGL
-    # Add this to the user configuration session of the .zshrc file then logoff
-    configure_nvidia_zsh
-
     # NVENC/NVDEC support
     prompt -db "Installing NVENC/NVDEC support packages..."
     ensure_sudo
@@ -459,7 +359,6 @@ function install_nvidia() {
 
     prompt -sb "nVidia proprietary drivers installation complete!"
 }
-
 
 # Function: main_menu
 # Description: Main application menu
@@ -479,7 +378,6 @@ function main_menu() {
         esac
     done
 }
-
 
 # Main execution starts here
 main_menu
