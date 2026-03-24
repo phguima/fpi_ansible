@@ -287,23 +287,6 @@
         global: yes
         state: present
       tags: [software, gemini]
-    
-    - name: Software | Install GeminiCLI extensions for primary user
-      ansible.builtin.command:
-        cmd: "gemini extensions install --consent {{ item.url }}"
-      become_user: "{{ ansible_env.SUDO_USER }}"
-      loop:
-        - { name: 'chrome-devtools', url: 'https://github.com/ChromeDevTools/chrome-devtools-mcp' }
-        - { name: 'code-review', url: 'https://github.com/gemini-cli-extensions/code-review' }
-        - { name: 'criticalthink', url: 'https://github.com/abagames/slash-criticalthink' }
-        - { name: 'gemini-cli-jules', url: 'https://github.com/gemini-cli-extensions/jules' }
-        - { name: 'gemini-cli-security', url: 'https://github.com/gemini-cli-extensions/security' }
-        - { name: 'github', url: 'https://github.com/github/github-mcp-server' }
-        - { name: 'google-workspace', url: 'https://github.com/gemini-cli-extensions/workspace' }
-      register: extension_install
-      changed_when: "'is already installed' not in extension_install.stdout"
-      when: ansible_env.SUDO_USER is defined and ansible_env.SUDO_USER != 'root'
-      tags: [gemini, extensions]
 
      # --- ProtonVPN Installation ---
     - name: ProtonVPN | Install ProtonVPN repository
@@ -618,26 +601,54 @@
       tags: [software, gnome, ptyxis]
 
     # --- Python Libraries ---
-    - name: Python | Install markitdown globally
+    - name: Python | Install markitdown
       ansible.builtin.pip:
         name: markitdown
         state: present
         executable: pip3
-      become: yes
+        extra_args: --user
+      become_user: "{{ user_name }}"
       tags: [software, python, markitdown]
 
-    - name: Python | Install markitdown[pdf] globally
+    - name: Python | Install markitdown[pdf]
       ansible.builtin.pip:
         name: markitdown[pdf]
         state: present
         executable: pip3
-      become: yes
+        extra_args: --user
+      become_user: "{{ user_name }}"
       tags: [software, python, markitdown]
     
-    - name: Python | Install markitdown[docx] globally
+    - name: Python | Install markitdown[docx]
       ansible.builtin.pip:
         name: markitdown[docx]
         state: present
         executable: pip3
-      become: yes
+        extra_args: --user
+      become_user: "{{ user_name }}"
       tags: [software, python, markitdown]
+
+    - name: Python | Install notebooklm-py
+      ansible.builtin.pip:
+        name: notebooklm-py
+        state: present
+        executable: pip3
+        extra_args: --user
+      become_user: "{{ user_name }}"
+      tags: [software, python, notebooklm]
+
+    - name: Python | Install notebooklm-py[browser]
+      ansible.builtin.pip:
+        name: "notebooklm-py[browser]"
+        state: present
+        executable: pip3
+        extra_args: --user
+      become_user: "{{ user_name }}"
+      tags: [software, python, notebooklm]
+
+    - name: Python | Install Playwright Chromium
+      ansible.builtin.command:
+        cmd: "python3 -m playwright install chromium"
+      become_user: "{{ user_name }}"
+      changed_when: false
+      tags: [software, python, notebooklm, playwright]

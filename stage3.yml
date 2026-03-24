@@ -1,0 +1,42 @@
+---
+- name: Fedora Post-Install Setup - Stage 3 - GeminiCLI Extensions
+  hosts: localhost
+  become: yes
+  vars_files:
+    - vars/main.yml
+
+  tasks:
+    # --- Prerequired tasks ---
+    - name: Shell | Get home directory of the primary user
+      ansible.builtin.getent:
+        database: passwd
+        key: "{{ ansible_env.SUDO_USER }}"
+      register: primary_user_data
+      when: ansible_env.SUDO_USER is defined and ansible_env.SUDO_USER != 'root'
+      tags: [shell, setup]
+
+    - name: Software | Install GeminiCLI extensions for primary user
+      ansible.builtin.command:
+        cmd: "gemini extensions install --consent {{ item.url }}"
+      become_user: "{{ ansible_env.SUDO_USER }}"
+      loop:
+        - { name: 'chrome-devtools', url: 'https://github.com/ChromeDevTools/chrome-devtools-mcp' }
+        - { name: 'code-review', url: 'https://github.com/gemini-cli-extensions/code-review' }
+        - { name: 'criticalthink', url: 'https://github.com/abagames/slash-criticalthink' }
+        - { name: 'gemini-cli-jules', url: 'https://github.com/gemini-cli-extensions/jules' }
+        - { name: 'gemini-cli-security', url: 'https://github.com/gemini-cli-extensions/security' }
+        - { name: 'github', url: 'https://github.com/github/github-mcp-server' }
+        - { name: 'google-workspace', url: 'https://github.com/gemini-cli-extensions/workspace' }
+      register: extension_install
+      # Handle the case where the command returns rc: 1 because the extension is already installed
+      failed_when: 
+        - extension_install.rc != 0 
+        - "'already installed' not in extension_install.stderr"
+      # Only consider it a change if the exit code is 0 and the success message wasn't "already installed"
+      changed_when: 
+        - extension_install.rc == 0
+        - "'already installed' not in extension_install.stdout"
+        - "'already installed' not in extension_install.stderr"
+      # Guard to ensure we only run for a real user context
+      when: ansible_env.SUDO_USER is defined and ansible_env.SUDO_USER != 'root'
+      tags: [gemini, extensions]
