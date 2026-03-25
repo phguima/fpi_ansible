@@ -43,6 +43,7 @@ dnf_packages_common:
   - chromium
   - clamav
   - clamav-update
+  - darktable
   - fastfetch
   - hwinfo
   - lm_sensors
@@ -111,7 +112,7 @@ vscode_repo_url: "https://packages.microsoft.com/yumrepos/vscode"
 
 # Oh-My-Zsh settings
 omz_install_script_url: "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh"
-omz_theme_url: "https://raw.githubusercontent.com/phguima/fedora_stuffs/main/omz-themes/kali-like-alt.zsh-theme"
+omz_theme_url: "https://raw.githubusercontent.com/phguima/fedora-stuffs/main/omz-themes/kali-like-alt.zsh-theme"
 omz_theme_name: "kali-like-alt"
 
 # Zsh Aliases
@@ -120,14 +121,16 @@ zsh_aliases: |
   alias ohmyzsh="nano ~/.oh-my-zsh"
   alias lls="ls --color -lh --group-directories-first"
   alias llsa="ls --color -lha --group-directories-first"
-  alias geminicliup="sudo npm install -g @google/gemini-cli"
+  alias gemini-update="sudo npm install -g @google/gemini-cli"
   alias geminicli="cd ~/wks && clear && gemini"
-  alias openthevoid="sudo cryptsetup open /dev/nvme0n1p3 thevoid"
-  alias closethevoid="sudo cryptsetup close thevoid"
+  alias open-thevoid="sudo cryptsetup open /dev/nvme0n1p3 thevoid"
+  alias close-thevoid="sudo cryptsetup close thevoid"
+  alias clean-cache="sudo sync; echo 3 | sudo tee /proc/sys/vm/drop_caches"
+  alias nvidia-run="__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0"
 
 # Konsole Settings
-konsole_profile_url: "https://raw.githubusercontent.com/phguima/fedora_stuffs/refs/heads/main/konsole/kali-like-alt.profile"
-konsole_scheme_url: "https://raw.githubusercontent.com/phguima/fedora_stuffs/refs/heads/main/konsole/kali-like-alt.colorscheme"
+konsole_profile_url: "https://raw.githubusercontent.com/phguima/fedora-stuffs/refs/heads/main/konsole/kali-like-alt.profile"
+konsole_scheme_url: "https://raw.githubusercontent.com/phguima/fedora-stuffs/refs/heads/main/konsole/kali-like-alt.colorscheme"
 
 # PTYxis Settings
 ptyxis_restore_window_size: "false"
